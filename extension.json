@@ -1,0 +1,6 @@
+{
+  "id": "listContentTypes",
+  "name": "Content Type List",
+  "srcdoc": "index.html",
+  "fieldTypes": ["Symbol"]
+}

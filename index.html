@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Content Type List - Extension Example</title>
+    <link rel="stylesheet" href="//unpkg.com/@contentful/forma-36-react-components@2/dist/styles.css"/>
+    
+    <!-- Content Management API SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/contentful-management@latest/dist/contentful-management.browser.min.js"></script>
+
+    <script src="//unpkg.com/whatwg-fetch@3.0.0/dist/fetch.umd.js"></script>
+    <script src="//unpkg.com/contentful-ui-extensions-sdk@3"></script>
+    <script src="//unpkg.com/react@16.6.3/umd/react.production.min.js"></script>
+    <script src="//unpkg.com/react-dom@16.6.3/umd/react-dom.production.min.js"></script>
+    <script src="//unpkg.com/create-react-class@15.6.3/create-react-class.min.js"></script>
+    <script src="//unpkg.com/@contentful/forma-36-react-components@2/dist/umd/forma-36-react-components.production.min.js"></script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="text/javascript">
+      var client = contentfulManagement.createClient({
+        accessToken: '<content-management-token>'
+      });
+      var spaceID = '<space-id>';
+      var createElement = React.createElement;
+      var SelectField = Forma36.SelectField;
+      var Option = Forma36.Option;
+      var Spinner = Forma36.Spinner;
+
+      function getSecureContentTypes() {        
+        // This API call will request a space with the specified ID
+        return client.getSpace(spaceID)
+        	.then((space) => space.getEnvironment('master'))
+          .then((environment) => {
+          	// Let's filter for the content types with keyword 'secure' in content type id
+          	return environment.getContentTypes({
+            	'sys.id[match]': 'secure',
+            	'order': 'name'
+            });
+         })
+      }
+      
+      var App = createReactClass({
+        getInitialState: function() {
+          return {
+            error: false,
+            hasLoaded: false,
+            items: [],
+            value: this.props.api.field.getValue()
+          };
+        },
+
+        componentDidMount: function() {
+          getSecureContentTypes()
+            .then(
+              function(entries) {
+                const items = entries.items;
+                this.setState({
+                  hasLoaded: true,
+                  items
+                });
+              }.bind(this),
+              function(error) {
+                this.setState({
+                  hasLoaded: true,
+                  error: error
+                });
+              }.bind(this)
+            );
+        },
+
+        onChange: function(event) {
+          var value = event.target.value;
+          this.setState({ value: value });
+          this.props.api.field.setValue(value);
+        },
+
+        render: function() {
+          return createElement(
+            "div",
+            {},
+            !this.state.hasLoaded && createElement(Spinner),
+            this.state.hasLoaded && createElement(
+              SelectField, {
+                name: "contentTypeSelect",
+                id: "contentTypeSelect",
+                helpText: "Please specify the secure content type for this entry.",
+                onChange: this.onChange,
+                value: this.state.value
+              },
+              createElement(Option, { value: "" }, "Pick a Content Type"),
+              this.state.items.map(function(item) {
+                return createElement(Option, { key: item.sys.id, value: `${item.sys.id}` }, item.name);
+              })
+          	)
+          );
+        }
+      });
+
+      window.contentfulExtension.init(function(api) {
+        ReactDOM.render(createElement(App, { api: api }), document.getElementById("root"));
+      });
+    </script>
+  </body>
+</html>
